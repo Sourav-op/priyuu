@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Letter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink-bg: #fff0f3;
+            --hot-pink: #ff4d6d;
+            --envelope-color: #ffb3c1;
+            --text-color: #4a4a4a;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Quicksand', sans-serif;
+            background-color: var(--pink-bg);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Background Video (Muted for browser autoplay rules) */
+        #bg-video {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; z-index: -2;
+            opacity: 0.3; display: none;
+        }
+
+        .screen {
+            display: none; height: 100vh; width: 100vw;
+            flex-direction: column; align-items: center;
+            justify-content: center; position: absolute;
+            transition: 0.5s; background: transparent;
+        }
+        .active { display: flex; animation: fadeIn 0.8s ease-out; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- ENVELOPE --- */
+        .envelope-wrapper { cursor: pointer; position: relative; transition: transform 0.3s; }
+        .envelope {
+            position: relative; width: 280px; height: 180px;
+            background: var(--envelope-color); border-radius: 0 0 10px 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .envelope::before {
+            content: ''; position: absolute; top: 0;
+            border-left: 140px solid transparent; border-right: 140px solid transparent;
+            border-top: 100px solid #ff8fa3; z-index: 3;
+            transform-origin: top; transition: transform 0.5s 0.2s ease;
+        }
+        .envelope.open::before { transform: rotateX(180deg); z-index: 1; }
+        .letter-preview {
+            position: absolute; top: 10px; left: 10%; width: 80%; height: 80%;
+            background: white; z-index: 2; display: flex;
+            align-items: center; justify-content: center;
+            font-family: 'Dancing Script', cursive; font-size: 1.2rem;
+        }
+        .envelope.open .letter-preview { transform: translateY(-100px); }
+
+        /* --- FINAL SCREEN STYLING --- */
+        .video-container-final {
+            width: 80%; max-width: 320px;
+            border: 8px solid white; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(255, 77, 109, 0.3);
+            overflow: hidden; margin-bottom: 20px;
+        }
+        .final-video { width: 100%; display: block; }
+
+        .cheesy-container {
+            text-align: center; padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px; width: 85%; max-width: 400px;
+        }
+        .cheesy-line { 
+            font-style: italic; color: var(--hot-pink); 
+            margin: 8px 0; font-weight: bold; font-size: 0.9rem;
+            animation: slideUp 1s ease-out;
+        }
+
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* General UI */
+        .timer-container, .card {
+            background: rgba(255, 255, 255, 0.9); padding: 20px;
+            border-radius: 25px; border: 2px solid var(--hot-pink);
+            backdrop-filter: blur(5px); text-align: center;
+        }
+        .line-box {
+            margin: 10px 0; padding: 12px; background: white;
+            border-radius: 15px; border-left: 5px solid var(--hot-pink);
+            opacity: 0; transition: 0.5s;
+        }
+        .line-box.show { opacity: 1; transform: translateX(0); }
+        button {
+            background: var(--hot-pink); color: white; border: none;
+            padding: 12px 25px; border-radius: 50px; font-weight: bold;
+            cursor: pointer; margin-top: 10px;
+        }
+        .heart { position: absolute; color: var(--hot-pink); animation: float 4s linear infinite; z-index: -1; }
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <video id="bg-video" loop playsinline muted><source src="0202.mp4" type="video/mp4"></video>
+    <audio id="bg-music" src="song.mp3" loop></audio>
+
+    <div id="letter-screen" class="screen active">
+        <div class="envelope-wrapper" onclick="openLetter()">
+            <div class="envelope" id="envelope"><div class="letter-preview">For You... ❤️</div></div>
+        </div>
+        <p style="margin-top: 50px; color: var(--hot-pink); font-weight: bold;">Tap to open</p>
+    </div>
+
+    <div id="recap-screen" class="screen">
+        <div class="timer-container">
+            <div id="timer" style="display: flex; gap: 10px;">
+                <div><span id="days" style="font-size: 1.5rem; color: var(--hot-pink); font-weight: bold;">0</span><br><small>Days</small></div>
+                <div><span id="hours" style="font-size: 1.5rem; color: var(--hot-pink); font-weight: bold;">0</span><br><small>Hrs</small></div>
+                <div><span id="mins" style="font-size: 1.5rem; color: var(--hot-pink); font-weight: bold;">0</span><br><small>Mins</small></div>
+                <div><span id="secs" style="font-size: 1.5rem; color: var(--hot-pink); font-weight: bold;">0</span><br><small>Secs</small></div>
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <div class="line-box" id="line1">Two years ago, you changed everything... ✨</div>
+            <div class="line-box" id="line2">My favorite place is inside your hugs. ❤️</div>
+            <div class="line-box" id="line3">Thank you for being my better half. 🥺</div>
+            <div class="line-box" id="line4">Ready for forever? 🦖</div>
+        </div>
+        <button id="next-btn" style="display:none;" onclick="nextScreen('proposal-screen')">Next →</button>
+    </div>
+
+    <div id="proposal-screen" class="screen">
+        <div class="card">
+            <h1>Will you be mine?</h1>
+            <p><strong>Will you stay my Valentine forever?</strong></p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="celebrate()">YES! ❤️</button>
+                <button id="no-btn" style="background: #ccc;" onmouseover="moveButton(this)">No</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="final-screen" class="screen">
+        <div class="video-container-final">
+            <video class="final-video" autoplay loop playsinline muted>
+                <source src="0202.mp4" type="video/mp4">
+            </video>
+        </div>
+        <h1 style="font-family: 'Dancing Script', cursive; color: var(--hot-pink); margin: 0;">Happy Valentine's Day!</h1>
+        <div class="cheesy-container">
+            <p class="cheesy-line">"Are you a campfire? Because you're hot and I want s'more."</p>
+            <p class="cheesy-line">"Is your name Google? Because you have everything I’m searching for."</p>
+            <p class="cheesy-line">"I'm not a photographer, but I can definitely picture us together."</p>
+        </div>
+    </div>
+
+    <script>
+        const startDate = new Date("January 25, 2024 00:00:00").getTime();
+        
+        function openLetter() {
+            document.getElementById('bg-music').play();
+            const bgVid = document.getElementById('bg-video');
+            bgVid.style.display = 'block';
+            bgVid.play();
+            document.getElementById('envelope').classList.add('open');
+            setTimeout(() => { nextScreen('recap-screen'); startLines(); }, 1200);
+        }
+
+        function updateTimer() {
+            const diff = new Date().getTime() - startDate;
+            document.getElementById("days").innerText = Math.floor(diff / 86400000);
+            document.getElementById("hours").innerText = Math.floor((diff % 86400000) / 3600000);
+            document.getElementById("mins").innerText = Math.floor((diff % 3600000) / 60000);
+            document.getElementById("secs").innerText = Math.floor((diff % 60000) / 1000);
+        }
+        setInterval(updateTimer, 1000);
+
+        function startLines() {
+            let i = 1;
+            const timer = setInterval(() => {
+                const el = document.getElementById('line' + i);
+                if(el) el.classList.add('show');
+                if(++i > 4) { clearInterval(timer); document.getElementById('next-btn').style.display = 'block'; }
+            }, 1500);
+        }
+
+        function nextScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function moveButton(btn) {
+            btn.style.position = 'fixed';
+            btn.style.top = Math.random() * 70 + 15 + 'vh';
+            btn.style.left = Math.random() * 70 + 15 + 'vw';
+        }
+
+        function celebrate() { nextScreen('final-screen'); }
+
+        setInterval(() => {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.innerHTML = '❤️';
+            heart.style.left = Math.random() * 100 + 'vw';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 4000);
+        }, 300);
+    </script>
+</body>
+</html>
